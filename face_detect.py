@@ -1,5 +1,15 @@
 import pygame.camera
 import face_recognition
+from transitions import Machine
+
+class FSM(object):
+    states = ['MachineActive', 'MachineInactive']
+    def __init__(self,name):
+        self.name = name
+        self.machine = Machine(model=self, states=FSM.states, initial='MachineInactive')
+        self.machine.add_transition(trigger='identified', source = 'MachineInactive', dest = 'MachineActive')
+        self.machine.add_transition(trigger='not_identified', source = 'MachineActive', dest = 'MachineInactive')
+       
 
 pygame.init()
 pygame.camera.init()
@@ -15,6 +25,7 @@ color = (255,0,0)
 my_image = face_recognition.load_image_file("my_image.jpg")
 my_face_encoding = face_recognition.face_encodings(my_image)[0]
 known_face_encodings =[my_face_encoding]
+recognizer = FSM("Machine")
 
 is_running = True
 while is_running:
@@ -29,6 +40,8 @@ while is_running:
         face_image = face_recognition.load_image_file("image.jpg")
         face_locations = face_recognition.face_locations(face_image)
         if len(face_locations) != 0:
+            if recognizer.state == 'MachineInactive':
+                recognizer.identified()
             face_encodings = face_recognition.face_encodings(face_image, face_locations)
             matches = face_recognition.compare_faces(known_face_encodings, face_encodings[0])
             print((face_locations))
@@ -40,6 +53,8 @@ while is_running:
                 
             pygame.draw.rect(window_surface, color, pygame.Rect(face_locations[0][3], face_locations[0][0], face_locations[0][1], face_locations[0][2]), 2) 
         else:
+            if recognizer.state =='MachineActive':
+                recognizer.not_identified()
             window_surface.blit(image, (0,0))
 
     pygame.display.update()
